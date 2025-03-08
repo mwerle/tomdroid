@@ -4,7 +4,7 @@
       android:versionName="0.8.0dev" android:versionCode="11">
 
 	<uses-sdk android:minSdkVersion="9"
-	          android:targetSdkVersion="11" />
+	          android:targetSdkVersion="33" />
           
     <supports-screens android:resizeable="true"
                       android:smallScreens="true"
@@ -28,6 +28,7 @@
 			android:theme="@style/LightTheme"
 			android:name=".ui.Tomdroid"
 			android:configChanges="orientation|screenSize"
+			android:exported="true"
 			>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -52,6 +53,7 @@
 		<activity android:name=".ui.ViewNote"
 			android:theme="@style/LightTheme"
 			android:label="@string/view_title"
+			android:exported="true"
 			>
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
@@ -64,10 +66,12 @@
 			android:configChanges="keyboardHidden|orientation|screenSize"
 			android:theme="@style/LightTheme"
 			android:label="@string/edit_title"
+			android:exported="true"
 		    >
 		</activity>
 		<activity android:name=".util.Receive"
 		    android:theme="@style/LightTheme"
+			android:exported="true"
 		    >
 		    <!-- To receive data from other apps via share -->
         	<intent-filter>
@@ -82,7 +86,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="file" />
 				<data android:host="*" />
-				<data android:port="*" />
   				<data android:mimeType="*/*" />
 				<data android:pathPattern=".*\\.note" />
 			</intent-filter>
@@ -92,7 +95,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="content" />
 				<data android:host="*" />
-				<data android:port="*" />
   				<data android:mimeType="*/*" />
 				<data android:pathPattern=".*\\.note" />
 			</intent-filter>
@@ -103,7 +105,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="content" />
 				<data android:host="*" />
-				<data android:port="*" />
 				<data android:pathPattern=".*" />
   				<data android:mimeType="text/*" />
 			</intent-filter>
@@ -113,7 +114,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="file" />
 				<data android:host="*" />
-				<data android:port="*" />
 				<data android:pathPattern=".*" />
   				<data android:mimeType="text/*" />
 			</intent-filter>
@@ -124,7 +124,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="file" />
 				<data android:host="*" />
-				<data android:port="*" />
   				<data android:mimeType="application/note" />
 			</intent-filter>
 			<intent-filter>
@@ -133,7 +132,6 @@
 		        <category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="content" />
 				<data android:host="*" />
-				<data android:port="*" />
   				<data android:mimeType="application/note" />
 			</intent-filter>
 		</activity>
@@ -153,7 +151,8 @@
     	</activity>
         <activity android:name=".ui.ShortcutActivity" 
 			android:theme="@style/LightTheme"
-            android:label="@string/shortcut_menu_item_caption">
+            android:label="@string/shortcut_menu_item_caption"
+			android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -161,17 +160,21 @@
         </activity>
     	<activity android:name=".ui.CompareNotes"  
 			android:theme="@style/LightTheme"
-        	android:label="@string/app_name">  
+        	android:label="@string/app_name"
+			android:exported="true">
 		</activity>
 		  
         <activity android:name=".ui.FilePickerActivity"
 			android:theme="@style/LightTheme"
-        	android:label="@string/filePickerTitle"/>
+        	android:label="@string/filePickerTitle"
+			android:exported="true"
+			/>
 
 		<activity
 			android:name="com.dropbox.core.android.AuthActivity"
 			android:configChanges="orientation|keyboard"
-			android:launchMode="singleTask">
+			android:launchMode="singleTask"
+			android:exported="true">
 			<intent-filter>
 				<data android:scheme="db-yh5ubtwey9lw8g9"/>
 				<action android:name="android.intent.action.VIEW"/>

@@ -1,0 +1,9 @@
+rootProject.name = "Tomdroid"
+
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
