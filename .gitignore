@@ -1,1 +1,6 @@
 bin/**
+build/**
+.idea/**
+.gradle/**
+local.properties
+tags
