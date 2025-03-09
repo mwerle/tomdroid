@@ -10,7 +10,7 @@ buildscript {
 apply plugin: 'com.android.application'
 dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
-
+    implementation 'commons-codec:commons-codec:1.11'
 }
 
 android {
