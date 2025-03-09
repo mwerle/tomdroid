@@ -16,6 +16,17 @@ For more details and developer visible changes see the ChangeLog
 Tomdroid 0.8.0 - "<name>" released on <date>
 
 -------------------------------------------------------------------------------
+Tomdroid 0.8.0dev-1 - "Reboot" released on 2025-03-09
+
+**WARNING** This is a development release; use at your own risk!
+
+* updated to run on Android 13 "Tiramisu"
+* added basic notebook support
+* added support for dropbox sync
+* added support for ssh sync
+* added support for webdav sync
+
+-------------------------------------------------------------------------------
 Tomdroid 0.7.5 - "Christmas surprise" released on 2014-01-04
 
 * updated translations

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="org.tomdroid"
-      android:versionName="0.8.0dev" android:versionCode="11">
+      android:versionName="0.8.0dev-1" android:versionCode="11">
 
 	<uses-sdk android:minSdkVersion="9"
 	          android:targetSdkVersion="33" />
