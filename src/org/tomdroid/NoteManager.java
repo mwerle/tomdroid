@@ -579,6 +579,7 @@ public class NoteManager {
 	/**
 	 * Builds a regular expression pattern that will match any of the note title currently in the collection.
 	 * Useful for the Linkify to create the links to the notes.
+	 * TODO: only rebuild the expression if a note title has changed.
 	 * @return regexp pattern
 	 */
 	public static Pattern buildNoteLinkifyPattern(Activity activity, String noteTitle)  {
@@ -589,6 +590,7 @@ public class NoteManager {
 		// cursor must not be null and must return more than 0 entry
 		if (!(cursor == null || cursor.getCount() == 0)) {
 			String title;
+			long longestLen = 0;
 	
 			cursor.moveToFirst();
 	
@@ -596,8 +598,16 @@ public class NoteManager {
 				title = cursor.getString(cursor.getColumnIndexOrThrow(Note.TITLE));
 				if(title.length() == 0 || title.equals(noteTitle))
 					continue;
-				// Pattern.quote() here make sure that special characters in the note's title are properly escaped
-				sb.append("("+Pattern.quote(title)+")|");
+				// Arrange the patterns from longest to shortest, to ensure we match the longest
+				// ones first. TODO: sort the titles first instead of prepending, which is expensive
+				if (title.length() > longestLen) {
+					longestLen = title.length();
+					// Pattern.quote() here make sure that special characters in the note's title
+					// are properly escaped
+					sb.insert(0, "("+Pattern.quote(title)+")|");
+				} else {
+					sb.append("(" + Pattern.quote(title) + ")|");
+				}
 	
 			} while (cursor.moveToNext());
 			
@@ -606,7 +616,7 @@ public class NoteManager {
 				String pt = sb.substring(0, sb.length() - 1);
 
 				// return a compiled match pattern
-				pattern = Pattern.compile(pt, Pattern.CASE_INSENSITIVE);
+				pattern = Pattern.compile(pt);
 			}
 	
 		} else {
