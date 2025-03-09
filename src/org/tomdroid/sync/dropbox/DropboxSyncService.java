@@ -98,6 +98,7 @@ public class DropboxSyncService extends SyncService {
 
         syncInThread(new Runnable() {
             public void run() {
+                Cursor newLocalNotes = null;
                 try {
                     TLog.v(TAG, "Logging in to dropbox");
                     dbx.login(activity);
@@ -129,7 +130,7 @@ public class DropboxSyncService extends SyncService {
                     sendMessage(LATEST_REVISION,(int)latestRemoteRevision,0);
                     TLog.d(TAG, "old latest sync revision: {0}, remote latest sync revision: {1}", latestLocalRevision, latestRemoteRevision);
 
-                    Cursor newLocalNotes = NoteManager.getNewNotes(activity);
+                    newLocalNotes = NoteManager.getNewNotes(activity);
 
                     // same sync revision + no new local notes = no need to sync
 
@@ -173,8 +174,6 @@ public class DropboxSyncService extends SyncService {
                         return;
                     }
 
-                    // close cursor
-                    newLocalNotes.close();
                     prepareSyncableNotes(remoteNotes);
 
                     if(cancelled) {
@@ -190,6 +189,12 @@ public class DropboxSyncService extends SyncService {
                     setSyncProgress(100);
                     SyncService.ERROR_MESSAGE = e.getMessage();
                     sendMessage(UNKNOWN_ERROR);
+                } finally {
+                    // close cursor
+                    if (newLocalNotes != null) {
+                        activity.stopManagingCursor(newLocalNotes);
+                        newLocalNotes.close();
+                    }
                 }
             }
         });

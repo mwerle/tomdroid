@@ -268,7 +268,10 @@ public abstract class SyncService {
 						}
 					} while (cursor.moveToNext());
 				}
-				cursor.close();
+				if (cursor != null) {
+					activity.stopManagingCursor(cursor);
+					cursor.close();
+				}
 				
 				if(localNote == null)
 					pullableNotes.add(remoteNote);

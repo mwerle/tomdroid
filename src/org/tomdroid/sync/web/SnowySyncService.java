@@ -197,6 +197,7 @@ public class SnowySyncService extends SyncService implements ServiceAuth {
 
 					setSyncProgress(30);
 
+					Cursor newLocalNotes = null;
 					try {
 						JSONObject response = new JSONObject(rawResponse);
 
@@ -214,7 +215,7 @@ public class SnowySyncService extends SyncService implements ServiceAuth {
 						sendMessage(LATEST_REVISION,(int)latestRemoteRevision,0);
 						TLog.d(TAG, "old latest sync revision: {0}, remote latest sync revision: {1}", latestLocalRevision, latestRemoteRevision);
 
-						Cursor newLocalNotes = NoteManager.getNewNotes(activity); 
+						newLocalNotes = NoteManager.getNewNotes(activity);
 						
 						// same sync revision + no new local notes = no need to sync
 						
@@ -266,8 +267,6 @@ public class SnowySyncService extends SyncService implements ServiceAuth {
 							return; 
 						}						
 						
-						// close cursor
-						newLocalNotes.close();
 						prepareSyncableNotes(notesList);
 						
 					} catch (JSONException e) {
@@ -277,6 +276,12 @@ public class SnowySyncService extends SyncService implements ServiceAuth {
 										"JSON parsing", "json", e, rawResponse));
 						setSyncProgress(100);
 						return;
+					} finally {
+						// close cursor
+						if (newLocalNotes != null) {
+							activity.stopManagingCursor(newLocalNotes);
+							newLocalNotes.close();
+						}
 					}
 				} catch (java.net.UnknownHostException e) {
 					TLog.e(TAG, "Internet connection not available");

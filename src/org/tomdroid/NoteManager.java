@@ -79,25 +79,21 @@ public class NoteManager {
 
 	// gets a note from the content provider, based on guid
 	public static Note getNoteByGuid(Activity activity, String guid) {
-
+		Note note = null;
 		Uri notes = Tomdroid.CONTENT_URI;
 		
 		String[] whereArgs = new String[1];
 		whereArgs[0] = guid;
 		
 		// The note identifier is the guid
-		ContentResolver cr = activity.getContentResolver();
-		Cursor cursor = cr.query(notes,
-                FULL_PROJECTION,  
-                Note.GUID + "= ?",
-                whereArgs,
-                null);
-		activity.startManagingCursor(cursor);
-		if (cursor == null || cursor.getCount() == 0) {
-			cursor.close();
-			return null;
-		}
-		else {
+		Cursor cursor = activity.managedQuery(notes,
+				FULL_PROJECTION,
+				Note.GUID + "= ?",
+				whereArgs,
+				null);
+
+		if (!(cursor == null || cursor.getCount() == 0)) {
+
 			cursor.moveToFirst();
 			String noteContent = cursor.getString(cursor.getColumnIndexOrThrow(Note.NOTE_CONTENT));
 			String noteTitle = cursor.getString(cursor.getColumnIndexOrThrow(Note.TITLE));
@@ -105,17 +101,21 @@ public class NoteManager {
 			String noteTags = cursor.getString(cursor.getColumnIndexOrThrow(Note.TAGS));
 			String noteGUID = cursor.getString(cursor.getColumnIndexOrThrow(Note.GUID));
 			int noteDbid = cursor.getInt(cursor.getColumnIndexOrThrow(Note.ID));
-			
-			Note note = new Note();
+
+			note = new Note();
 			note.setTitle(noteTitle);
 			note.setXmlContent(stripTitleFromContent(noteContent, noteTitle));
 			note.setLastChangeDate(noteChangeDate);
 			note.addTag(noteTags);
 			note.setGuid(noteGUID);
 			note.setDbId(noteDbid);
-			cursor.close();
-			return note;
 		}
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
+		return note;
 	}
 	
 	// gets a note from the content provider
@@ -125,9 +125,9 @@ public class NoteManager {
 		
 		// can we find a matching note?
 		Cursor cursor = activity.managedQuery(uri, FULL_PROJECTION, null, null, null);
-		// cursor must not be null and must return more than 0 entry 
+
+		// cursor must not be null and must return more than 0 entry
 		if (!(cursor == null || cursor.getCount() == 0)) {
-			
 			// create the note from the cursor
 			cursor.moveToFirst();
 			String noteContent = cursor.getString(cursor.getColumnIndexOrThrow(Note.NOTE_CONTENT));
@@ -145,7 +145,10 @@ public class NoteManager {
 			note.setGuid(noteGUID);
 			note.setDbId(noteDbid);
 		}
-		cursor.close();
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		return note;
 	}
 
@@ -157,19 +160,18 @@ public class NoteManager {
 		whereArgs[0] = guid;
 		
 		// The note identifier is the guid
-		ContentResolver cr = activity.getContentResolver();
-		Cursor cursor = cr.query(notes,
+		Cursor cursor = activity.managedQuery(notes,
                 ID_PROJECTION,  
                 Note.GUID + "= ?",
                 whereArgs,
                 null);
-		activity.startManagingCursor(cursor);
-		
-		boolean returnvalue = false;
-		if (cursor != null && cursor.getCount() != 0) {
-			returnvalue = true;
+
+		boolean returnvalue = !(cursor == null || cursor.getCount() != 0);
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
 		}
-		cursor.close();
 		return returnvalue;
 	}
 	
@@ -207,7 +209,7 @@ public class NoteManager {
 		ContentValues values = new ContentValues();
 		values.put(Note.TITLE, title);
 		values.put(Note.FILE, note.getFileName());
-		values.put(Note.GUID, note.getGuid().toString());
+		values.put(Note.GUID, note.getGuid());
 		// Notice that we store the date in UTC because sqlite doesn't handle RFC3339 timezone information
 		values.put(Note.MODIFIED_DATE, note.getLastChangeDate().formatTomboy());
 		values.put(Note.NOTE_CONTENT, xmlContent);
@@ -235,7 +237,10 @@ public class NoteManager {
 
 			TLog.v(TAG, "Note updated in content provider: TITLE:{0} GUID:{1} TAGS:{2}", note.getTitle(), note.getGuid(), note.getTags());
 		}
-		managedCursor.close();
+		if (managedCursor != null) {
+			activity.stopManagingCursor(managedCursor);
+			managedCursor.close();
+		}
 		note = getNote(activity, uri);
 		return uri;
 	}
@@ -272,12 +277,8 @@ public class NoteManager {
 
 		ContentResolver cr = activity.getContentResolver();
 		int result = cr.delete(uri, null, null);
-		
-		if(result > 0) {
-			return true;
-		}
-		else 
-			return false;
+
+		return result > 0;
 	}
 
 	// this function deletes deleted notes - if they never existed on the server, we still delete them at sync
@@ -305,53 +306,50 @@ public class NoteManager {
 
 	public static Cursor getAllNotes(Activity activity, Boolean includeNotebookTemplates) {
 		// get a cursor representing all notes from the NoteProvider
-		Uri notes = Tomdroid.CONTENT_URI;
 		String where = "("+Note.TAGS + " NOT LIKE '%" + "system:deleted" + "%')";
 		if (!includeNotebookTemplates) {
 			where += " AND (" + Note.TAGS + " NOT LIKE '%" + "system:template" + "%')";
 		}
-		return activity.managedQuery(notes, LIST_PROJECTION, where, null, sortOrder);		
+		return activity.managedQuery(Tomdroid.CONTENT_URI, LIST_PROJECTION, where, null, sortOrder);
 	}
 
 	// this function gets all non-deleted notes as notes in an array
 	
 	public static Note[] getAllNotesAsNotes(Activity activity, boolean includeNotebookTemplates) {
-		Uri uri = Tomdroid.CONTENT_URI;
-		String where = "("+Note.TAGS + " NOT LIKE '%" + "system:deleted" + "%')";
-		String orderBy;
-		if (!includeNotebookTemplates) {
-			where += " AND (" + Note.TAGS + " NOT LIKE '%" + "system:template" + "%')";
-		}
-		orderBy = Note.MODIFIED_DATE + " DESC";
-		Cursor cursor = activity.managedQuery(uri, FULL_PROJECTION, where, null, orderBy);
+		Note[] notes = null;
+		Cursor cursor = getAllNotes(activity, includeNotebookTemplates);
 		if (cursor == null || cursor.getCount() == 0) {
 			TLog.d(TAG, "no notes in cursor");
-			return null;
-		}
-		TLog.d(TAG, "{0} notes in cursor",cursor.getCount());
-		Note[] notes = new Note[cursor.getCount()];
-		cursor.moveToFirst();
-		int key = 0;
+		} else {
+			TLog.d(TAG, "{0} notes in cursor", cursor.getCount());
+			notes = new Note[cursor.getCount()];
+			cursor.moveToFirst();
+			int key = 0;
 
-		while(!cursor.isAfterLast()) {
-			String noteContent = cursor.getString(cursor.getColumnIndexOrThrow(Note.NOTE_CONTENT));
-			String noteTitle = cursor.getString(cursor.getColumnIndexOrThrow(Note.TITLE));
-			String noteChangeDate = cursor.getString(cursor.getColumnIndexOrThrow(Note.MODIFIED_DATE));
-			String noteTags = cursor.getString(cursor.getColumnIndexOrThrow(Note.TAGS));
-			String noteGUID = cursor.getString(cursor.getColumnIndexOrThrow(Note.GUID));
-			int noteDbid = cursor.getInt(cursor.getColumnIndexOrThrow(Note.ID));
-			
-			Note note = new Note();
-			note.setTitle(noteTitle);
-			note.setXmlContent(stripTitleFromContent(noteContent, noteTitle));
-			note.setLastChangeDate(noteChangeDate);
-			note.addTag(noteTags);
-			note.setGuid(noteGUID);
-			note.setDbId(noteDbid);
-			notes[key++] = note;
-			cursor.moveToNext();
+			while (!cursor.isAfterLast()) {
+				String noteContent = cursor.getString(cursor.getColumnIndexOrThrow(Note.NOTE_CONTENT));
+				String noteTitle = cursor.getString(cursor.getColumnIndexOrThrow(Note.TITLE));
+				String noteChangeDate = cursor.getString(cursor.getColumnIndexOrThrow(Note.MODIFIED_DATE));
+				String noteTags = cursor.getString(cursor.getColumnIndexOrThrow(Note.TAGS));
+				String noteGUID = cursor.getString(cursor.getColumnIndexOrThrow(Note.GUID));
+				int noteDbid = cursor.getInt(cursor.getColumnIndexOrThrow(Note.ID));
+
+				Note note = new Note();
+				note.setTitle(noteTitle);
+				note.setXmlContent(stripTitleFromContent(noteContent, noteTitle));
+				note.setLastChangeDate(noteChangeDate);
+				note.addTag(noteTags);
+				note.setGuid(noteGUID);
+				note.setDbId(noteDbid);
+				notes[key++] = note;
+				cursor.moveToNext();
+			}
 		}
-		cursor.close();
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		return notes;
 	}	
 
@@ -392,16 +390,12 @@ public class NoteManager {
 		}
 
 		// get a cursor representing all notes from the NoteProvider
-		Uri notes = Tomdroid.CONTENT_URI;
-
-		ContentResolver cr = activity.getContentResolver();
-		Cursor notesCursor = cr.query(notes,
-				LIST_PROJECTION,  
+		Cursor notesCursor = activity.managedQuery(Tomdroid.CONTENT_URI,
+				LIST_PROJECTION,
 				where,
 				qargs,
 				sortOrder);
-		activity.startManagingCursor(notesCursor);
-		
+
 		// set up an adapter binding the TITLE field of the cursor to the list item
 		String[] from = new String[] { Note.TITLE };
 		int[] to = new int[] { R.id.note_title };
@@ -454,9 +448,11 @@ public class NoteManager {
 			// TODO send an error to the user
 			TLog.d(TAG, "Cursor returned null or 0 notes");
 		}
-		
-		cursor.close();
-		
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		return id;
 	}
 
@@ -477,8 +473,11 @@ public class NoteManager {
 			// TODO send an error to the user
 			TLog.d(TAG, "Cursor returned null or 0 notes");
 		}
-		
-		cursor.close();
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		
 		return id;
 	}
@@ -488,7 +487,7 @@ public class NoteManager {
 	 * stripTitleFromContent
 	 * Because of an historic oddity in Tomboy's note format, a note's title is in a <title> tag but is also repeated
 	 * in the <note-content> tag. This method strips it from <note-content>.
-	 * @param noteContent
+	 * @param xmlContent
 	 */
 	public static String stripTitleFromContent(String xmlContent, String title) {
 		// get rid of the title that is doubled in the note's content
@@ -567,8 +566,11 @@ public class NoteManager {
 				}
 			}
 		}
-		
-		cursor.close();
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		
 		return noteTitle;
 	}
@@ -580,13 +582,12 @@ public class NoteManager {
 	 * @return regexp pattern
 	 */
 	public static Pattern buildNoteLinkifyPattern(Activity activity, String noteTitle)  {
-	
+		Pattern pattern = null;
 		StringBuilder sb = new StringBuilder();
 		Cursor cursor = getTitles(activity);
 	
 		// cursor must not be null and must return more than 0 entry
 		if (!(cursor == null || cursor.getCount() == 0)) {
-	
 			String title;
 	
 			cursor.moveToFirst();
@@ -600,24 +601,25 @@ public class NoteManager {
 	
 			} while (cursor.moveToNext());
 			
-			// if only empty titles, return
-			if (sb.length() == 0)
-				return null;
-			
-			// get rid of the last | that is not needed (I know, its ugly.. better idea?)
-			String pt = sb.substring(0, sb.length()-1);
-	
-			// return a compiled match pattern
-			return Pattern.compile(pt, Pattern.CASE_INSENSITIVE);
+			if (sb.length() > 0) {
+				// get rid of the last | that is not needed (I know, its ugly.. better idea?)
+				String pt = sb.substring(0, sb.length() - 1);
+
+				// return a compiled match pattern
+				pattern = Pattern.compile(pt, Pattern.CASE_INSENSITIVE);
+			}
 	
 		} else {
-	
 			// TODO send an error to the user
 			TLog.d(TAG, "Cursor returned null or 0 notes");
 		}
-		cursor.close();
+
+		if (cursor != null) {
+			activity.stopManagingCursor(cursor);
+			cursor.close();
+		}
 		
-		return null;
+		return pattern;
 	}
 	
 	public static String toggleSortOrder() {
